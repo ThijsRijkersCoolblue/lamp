@@ -21,7 +21,7 @@ A terminal emulator written in Go, built on top of [tcell](https://github.com/gd
 
 ## Requirements
 
-- Go 1.21+
+- Go 1.24+
 - A Unix-like system (Linux, macOS)
 
 ## Installation
