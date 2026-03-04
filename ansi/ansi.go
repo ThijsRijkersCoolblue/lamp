@@ -127,7 +127,6 @@ func ProcessOutput(screen tcell.Screen, data []byte, cursorX, cursorY *int, stat
 		i++
 	}
 
-	// Redraw screen
 	screen.Show()
 }
 
