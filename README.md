@@ -1,31 +1,24 @@
 # lamp
 
-A terminal emulator written in Go, built on top of [tcell](https://github.com/gdamore/tcell) and [pty](https://github.com/creack/pty).
+A small terminal emulator written in Go, built on top of [tcell](https://github.com/gdamore/tcell), [pty](https://github.com/creack/pty), and [Fyne](https://fyne.io).
 
-![Go](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)
+![Go](https://img.shields.io/badge/Go-1.24+-00ADD8?style=flat&logo=go)
 ![License](https://img.shields.io/badge/license-MIT-green?style=flat)
+![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey?style=flat)
 
-## Features
+## How It Works
 
-- Runs a real shell (`bash`) inside a PTY
-- ANSI/VT100 escape sequence parsing
-  - Cursor movement (absolute, relative, line-based)
-  - SGR colors — 16 color, 256 color, and 24-bit truecolor
-  - Erase in display and erase in line (`J`, `K`)
-  - Insert/delete lines (`L`, `M`)
-  - Scroll regions (`r`)
-  - Bold, italic, dim, underline, blink, reverse
-- UTF-8 character rendering
-- Terminal resize support
-- Works with interactive programs like `nvim`, `bash`
+Lamp spawns a shell process attached to a pseudo-terminal (PTY). Raw output from the PTY is parsed byte-by-byte in `ansi.ProcessOutput`, which interprets escape sequences and writes characters into a `tcell.SimulationScreen`, an in-memory cell buffer. A Fyne `canvas.Raster` reads that buffer at 30fps and renders the entire terminal as a single image using Menlo (macOS) or DejaVu Sans Mono (Linux) at 2× resolution for sharp retina output. Keyboard events from Fyne are mapped to tcell key events and forwarded back to the PTY as raw bytes.
 
 ## Requirements
 
 - Go 1.24+
-- A Unix-like system (Linux, macOS)
+- macOS 10.13+ or Linux
+- Xcode Command Line Tools (macOS): `xcode-select --install`
 
 ## Installation
 
+### Run in terminal
 ```bash
 git clone https://github.com/thijsrijkers/lamp
 cd lamp
@@ -34,26 +27,25 @@ go build -o lamp .
 ./lamp
 ```
 
-## How It Works
+### Install as a native macOS app
+```bash
+go mod tidy
+make install-macos
+```
 
-lamp spawns a shell process attached to a pseudo-terminal (PTY). Raw output from the PTY is parsed byte-by-byte in `ansi.ProcessOutput`, which interprets escape sequences and renders characters directly onto a `tcell.Screen`. Keyboard events are captured by tcell and forwarded back to the PTY as raw bytes.
+This builds a `Lamp.app` bundle, ad-hoc codesigns it, and installs it to `/Applications`. You can then launch it from Finder, Spotlight, or pin it to your Dock.
 
-## Keybindings
+### Install on Linux
+```bash
+make install-linux
+```
+*(NOTE: This is not tested properly yet)*
 
-All standard terminal input is forwarded to the shell, including:
-
-| Key | Action |
-|-----|--------|
-| Arrow keys | Cursor movement |
-| `Ctrl+C` | Interrupt |
-| `Ctrl+D` | EOF / logout |
-| `Ctrl+Z` | Suspend |
-| `Ctrl+L` | Clear screen |
-| `F1`–`F12` | Function keys |
-| `Home`, `End`, `PgUp`, `PgDn` | Navigation |
+Installs the binary to `/usr/local/bin` and adds a `.desktop` entry to your application launcher.
 
 ## Dependencies
 
-- [tcell](https://github.com/gdamore/tcell) — terminal screen rendering
+- [tcell](https://github.com/gdamore/tcell) — terminal screen buffer and ANSI parsing
 - [pty](https://github.com/creack/pty) — pseudo-terminal support
-
+- [fyne](https://fyne.io) — native windowing and GPU-accelerated rendering
+- [golang.org/x/image](https://pkg.go.dev/golang.org/x/image) — font rendering with OpenType support
