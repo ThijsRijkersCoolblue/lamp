@@ -10,12 +10,6 @@ A small terminal emulator written in Go, built on top of [tcell](https://github.
 
 Lamp spawns a shell process attached to a pseudo-terminal (PTY). Raw output from the PTY is parsed byte-by-byte in `ansi.ProcessOutput`, which interprets escape sequences and writes characters into a `tcell.SimulationScreen`, an in-memory cell buffer. Keyboard events from Fyne are mapped to tcell key events and forwarded back to the PTY as raw bytes.
 
-## Requirements
-
-- Go 1.24+
-- macOS 10.13+ or Linux
-- Xcode Command Line Tools (macOS): `xcode-select --install`
-
 ## Installation
 
 ### Run in terminal
@@ -49,3 +43,10 @@ Installs the binary to `/usr/local/bin` and adds a `.desktop` entry to your appl
 - [pty](https://github.com/creack/pty) — pseudo-terminal support
 - [fyne](https://fyne.io) — native windowing and GPU-accelerated rendering
 - [golang.org/x/image](https://pkg.go.dev/golang.org/x/image) — font rendering with OpenType support
+
+## Requirements
+
+- Go 1.24+
+- macOS 10.13+ or Linux
+- Xcode Command Line Tools (macOS): `xcode-select --install`
+
