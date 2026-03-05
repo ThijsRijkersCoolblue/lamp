@@ -8,7 +8,7 @@ build:
 
 install-linux: build
 	bash install-linux.sh
-
+	sed -i 's/\r//' install-linux.sh Makefile
 install-macos: build
 	bash install-macos.sh
 	# Ad-hoc codesign so macOS treats it as a proper app, not a CLI tool
