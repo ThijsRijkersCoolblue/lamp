@@ -8,7 +8,7 @@ A small terminal emulator written in Go, built on top of [tcell](https://github.
 
 ## How It Works
 
-Lamp spawns a shell process attached to a pseudo-terminal (PTY). Raw output from the PTY is parsed byte-by-byte in `ansi.ProcessOutput`, which interprets escape sequences and writes characters into a `tcell.SimulationScreen`, an in-memory cell buffer. A Fyne `canvas.Raster` reads that buffer at 30fps and renders the entire terminal as a single image using Menlo (macOS) or DejaVu Sans Mono (Linux) at 2× resolution for sharp retina output. Keyboard events from Fyne are mapped to tcell key events and forwarded back to the PTY as raw bytes.
+Lamp spawns a shell process attached to a pseudo-terminal (PTY). Raw output from the PTY is parsed byte-by-byte in `ansi.ProcessOutput`, which interprets escape sequences and writes characters into a `tcell.SimulationScreen`, an in-memory cell buffer. Keyboard events from Fyne are mapped to tcell key events and forwarded back to the PTY as raw bytes.
 
 ## Requirements
 
