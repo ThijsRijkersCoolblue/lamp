@@ -40,6 +40,7 @@ This builds a `Lamp.app` bundle, ad-hoc codesigns it, and installs it to `/Appli
 make install-linux
 ```
 *(NOTE: This is not tested properly yet)*
+
 Installs the binary to `/usr/local/bin` and adds a `.desktop` entry to your application launcher.
 
 ## Dependencies
