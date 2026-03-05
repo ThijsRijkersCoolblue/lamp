@@ -1,22 +1,8 @@
-package window
+package events
 
 import (
-	"log"
-
 	"github.com/gdamore/tcell/v2"
 )
-
-func CreateScreen() tcell.Screen {
-	screen, err := tcell.NewScreen()
-	if err != nil {
-		log.Fatal(err)
-	}
-	if err := screen.Init(); err != nil {
-		log.Fatal(err)
-	}
-
-	return screen
-}
 
 func HandleEvent(screen tcell.Screen, event tcell.Event, write func([]byte)) {
 	switch ev := event.(type) {
