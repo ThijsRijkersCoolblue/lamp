@@ -22,7 +22,6 @@ func ProcessOutput(screen tcell.Screen, data []byte, cursorX, cursorY *int, stat
 			*cursorX = 0
 		case '\n':
 			*cursorY++
-			*cursorX = 0
 		case '\t':
 			next := (*cursorX + 8) &^ 7
 			*cursorX = next
