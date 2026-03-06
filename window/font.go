@@ -10,13 +10,13 @@ import (
 
 const (
 	FontSize = 15.0
-	Cols     = 200
-	Rows     = 50
 )
 
 var (
 	CharW, CharH int
 	Face         xfont.Face
+	Cols         int
+	Rows         int
 )
 
 func InitFont() {
@@ -68,4 +68,5 @@ func InitFont() {
 	if CharW == 0 {
 		CharW = CharH / 2
 	}
+	log.Printf("Font metrics: CharW=%d CharH=%d", CharW, CharH)
 }

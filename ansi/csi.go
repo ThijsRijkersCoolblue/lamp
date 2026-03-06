@@ -119,6 +119,22 @@ func handleCSI(screen tcell.Screen, cmd byte, parameters string, cursorX, cursor
 				screen.SetContent(x, *cursorY, ' ', nil, *style)
 			}
 		}
+	case 'X':
+		// erase n characters from cursor position
+		n := params.GetArg(args, 0, 1)
+		for x := *cursorX; x < *cursorX+n && x < width; x++ {
+			screen.SetContent(x, *cursorY, ' ', nil, *style)
+		}
+	case '@':
+		// insert n blank characters
+		n := params.GetArg(args, 0, 1)
+		for x := width - 1; x >= *cursorX+n; x-- {
+			ch, comb, st, _ := screen.GetContent(x-n, *cursorY)
+			screen.SetContent(x, *cursorY, ch, comb, st)
+		}
+		for x := *cursorX; x < *cursorX+n && x < width; x++ {
+			screen.SetContent(x, *cursorY, ' ', nil, *style)
+		}
 	case 'L':
 		n := params.GetArg(args, 0, 1)
 		for i := 0; i < n; i++ {

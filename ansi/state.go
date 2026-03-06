@@ -6,6 +6,7 @@ type State struct {
 	ScrollTop    int
 	ScrollBottom int
 	Style        tcell.Style
+	Leftover     []byte
 }
 
 func NewState(height int) *State {

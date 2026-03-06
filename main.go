@@ -3,7 +3,6 @@ package main
 import (
 	"image"
 	"image/color"
-	"image/draw"
 	"lamp/ansi"
 	"lamp/events"
 	"lamp/window"
@@ -22,6 +21,15 @@ import (
 
 func main() {
 	window.InitFont()
+
+	window.Cols = 188
+	window.Rows = 45
+
+	cellW := window.CharW / 2
+	cellH := window.CharH / 2
+
+	logicalW := float32(window.Cols * cellW)
+	logicalH := float32(window.Rows * cellH)
 
 	cmd := exec.Command("bash", "--login")
 	ptmx, err := pty.Start(cmd)
@@ -45,60 +53,64 @@ func main() {
 			if err != nil {
 				return
 			}
-			ansi.ProcessOutput(simScreen, buf[:n], &cursorX, &cursorY, ansiState)
+			data := buf[:n]
+			if len(ansiState.Leftover) > 0 {
+				data = append(ansiState.Leftover, data...)
+				ansiState.Leftover = nil
+			}
+			ansi.ProcessOutput(simScreen, data, &cursorX, &cursorY, ansiState)
 		}
 	}()
 
 	writeToPTY := func(b []byte) { ptmx.Write(b) }
 
-	pixelW := window.Cols * window.CharW
-	pixelH := window.Rows * window.CharH
-	img := image.NewRGBA(image.Rect(0, 0, pixelW, pixelH))
-
 	raster := canvas.NewRaster(func(w, h int) image.Image {
-		draw.Draw(img, img.Bounds(), image.NewUniform(color.Black), image.Point{}, draw.Src)
+		img := image.NewRGBA(image.Rect(0, 0, w, h))
 
 		cells, sw, sh := simScreen.GetContents()
-		metrics := window.Face.Metrics()
-		ascent := metrics.Ascent.Ceil()
+		ascent := window.Face.Metrics().Ascent.Ceil()
 
-		for r := 0; r < sh && r < window.Rows; r++ {
-			for c := 0; c < sw && c < window.Cols; c++ {
-				cell := cells[r*sw+c]
-				ch := rune(' ')
+		cw := w / window.Cols
+		ch := h / window.Rows
+		if cw == 0 {
+			cw = 1
+		}
+		if ch == 0 {
+			ch = 1
+		}
+
+		for row := 0; row < sh && row < window.Rows; row++ {
+			for col := 0; col < sw && col < window.Cols; col++ {
+				cell := cells[row*sw+col]
+				r := rune(' ')
 				if len(cell.Runes) > 0 && cell.Runes[0] != 0 {
-					ch = cell.Runes[0]
+					r = cell.Runes[0]
 				}
 				fg, bg, _ := cell.Style.Decompose()
+				x, y := col*cw, row*ch
 
-				bgCol := window.TcellColorToRGBA(bg, false)
-				if bgCol != color.Black {
-					window.FillRect(img, c*window.CharW, r*window.CharH, window.CharW, window.CharH, bgCol)
-				}
+				window.FillRect(img, x, y, cw, ch, window.TcellColorToRGBA(bg, false))
 
-				if ch != ' ' {
-					d := &xfont.Drawer{
+				if r != ' ' {
+					(&xfont.Drawer{
 						Dst:  img,
 						Src:  image.NewUniform(window.TcellColorToRGBA(fg, true)),
 						Face: window.Face,
-						Dot:  fixed.P(c*window.CharW, r*window.CharH+ascent),
-					}
-					d.DrawString(string(ch))
+						Dot:  fixed.P(x, y+ascent),
+					}).DrawString(string(r))
 				}
 			}
 		}
 
 		cx, cy := cursorX, cursorY
 		if cx >= 0 && cx < window.Cols && cy >= 0 && cy < window.Rows {
-			window.FillRect(img, cx*window.CharW, cy*window.CharH, window.CharW, window.CharH,
+			window.FillRect(img, cx*cw, cy*ch, cw, ch,
 				color.RGBA{R: 255, G: 255, B: 255, A: 80})
 		}
 
 		return img
 	})
 
-	logicalW := float32(pixelW) / 2
-	logicalH := float32(pixelH) / 2
 	raster.SetMinSize(fyne.NewSize(logicalW, logicalH))
 
 	a := app.New()
@@ -110,7 +122,9 @@ func main() {
 	go func() {
 		ticker := time.NewTicker(time.Second / 30)
 		for range ticker.C {
-			raster.Refresh()
+			fyne.Do(func() {
+				raster.Refresh()
+			})
 		}
 	}()
 
@@ -124,5 +138,13 @@ func main() {
 		events.HandleEvent(simScreen, ev, writeToPTY)
 	})
 
+	w.Show()
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		fyne.Do(func() {
+			w.Resize(fyne.NewSize(logicalW+1, logicalH+1))
+			w.Resize(fyne.NewSize(logicalW, logicalH))
+		})
+	}()
 	w.ShowAndRun()
 }

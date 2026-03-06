@@ -21,61 +21,85 @@ func ProcessOutput(screen tcell.Screen, data []byte, cursorX, cursorY *int, stat
 		case '\r':
 			*cursorX = 0
 		case '\n':
-			*cursorX = 0
 			*cursorY++
+			*cursorX = 0
 		case '\t':
-			*cursorX += 4
+			next := (*cursorX + 8) &^ 7
+			*cursorX = next
+			if *cursorX >= width {
+				*cursorX = width - 1
+			}
 		case 0x08, 0x7f:
 			if *cursorX > 0 {
 				*cursorX--
 				screen.SetContent(*cursorX, *cursorY, ' ', nil, state.Style)
 			}
 		case 0x1b:
-			if i+1 < len(data) {
-				switch data[i+1] {
-				case '[':
-					i += 2
-					start := i
-					for i < len(data) && (data[i] < '@' || data[i] > '~') {
-						i++
+			if i+1 >= len(data) {
+				state.Leftover = append([]byte{}, data[i:]...)
+				screen.Show()
+				return
+			}
+			switch data[i+1] {
+			case '[':
+				j := i + 2
+				for j < len(data) && (data[j] < '@' || data[j] > '~') {
+					j++
+				}
+				if j >= len(data) {
+					state.Leftover = append([]byte{}, data[i:]...)
+					screen.Show()
+					return
+				}
+				cmd := data[j]
+				params := string(data[i+2 : j])
+
+				// alternate screen enter
+				if cmd == 'h' && (params == "?1049" || params == "?1047" || params == "?47") {
+					clearScreen(screen, state.Style)
+					*cursorX = 0
+					*cursorY = 0
+					state.ScrollTop = 0
+					state.ScrollBottom = height - 1
+				}
+				// alternate screen exit
+				if cmd == 'l' && (params == "?1049" || params == "?1047" || params == "?47") {
+					clearScreen(screen, state.Style)
+					*cursorX = 0
+					*cursorY = 0
+					state.ScrollTop = 0
+					state.ScrollBottom = height - 1
+				}
+				if params == "" || params[0] != '?' {
+					handleCSI(screen, cmd, params, cursorX, cursorY, &state.Style, width, height, state)
+				}
+				i = j
+			case ']':
+				j := i + 2
+				for j < len(data) {
+					if data[j] == 0x07 {
+						break
 					}
-					if i < len(data) {
-						cmd := data[i]
-						params := string(data[start:i])
-						if cmd == 'h' && params == "?1049" {
-							screen.Clear()
-							*cursorX = 0
-							*cursorY = 0
-							state.ScrollTop = 0
-							state.ScrollBottom = height - 1
-						}
-						if cmd == 'l' && params == "?1049" {
-							screen.Clear()
-							*cursorX = 0
-							*cursorY = 0
-							state.ScrollTop = 0
-							state.ScrollBottom = height - 1
-						}
-						handleCSI(screen, cmd, params, cursorX, cursorY, &state.Style, width, height, state)
+					if data[j] == 0x1b && j+1 < len(data) && data[j+1] == '\\' {
+						j++
+						break
 					}
-				case ']':
-					i += 2
-					for i < len(data) && data[i] != 0x07 {
-						if data[i] == 0x1b && i+1 < len(data) && data[i+1] == '\\' {
-							i++
-							break
-						}
-						i++
-					}
-				case '(', ')', '*', '+', '-', '.', '/':
-					i += 2
-					if i < len(data) && data[i] == 'B' {
-						i++
-					}
-					continue
-				default:
+					j++
+				}
+				if j >= len(data) {
+					state.Leftover = append([]byte{}, data[i:]...)
+					screen.Show()
+					return
+				}
+				i = j
+			case '(', ')', '*', '+', '-', '.', '/':
+				i += 2
+				if i < len(data) {
 					i++
 				}
+				continue
+			default:
+				i++
 			}
 		default:
 			if ch >= 32 {
@@ -103,4 +127,13 @@ func ProcessOutput(screen tcell.Screen, data []byte, cursorX, cursorY *int, stat
 	}
 
 	screen.Show()
+}
+
+func clearScreen(screen tcell.Screen, style tcell.Style) {
+	w, h := screen.Size()
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			screen.SetContent(x, y, ' ', nil, style)
+		}
+	}
 }
